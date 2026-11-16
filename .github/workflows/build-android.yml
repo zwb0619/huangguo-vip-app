@@ -55,19 +55,22 @@ jobs:
           include ":app"
           EOF
 
-          # 2. 递归全局搜索所有 build.gradle，将任何旧版 Kotlin 强行升级为 1.9.22
+          # 2. 全局搜索并干掉所有 build.gradle 中硬编码锁死旧版 Kotlin (如 1.6) 的限制
           find android -name "build.gradle" | while read file; do
-            echo "Upgrading Kotlin in $file"
+            echo "Cleaning Kotlin version locks in $file"
             sed -i 's/kotlin-gradle-plugin:[0-9]\.[0-9]\.[0-9]*/kotlin-gradle-plugin:1.9.22/g' "$file" || true
             sed -i 's/ext\.kotlin_version[[:space:]]*=[[:space:]]*'\''[0-9]\.[0-9]\.[0-9]*'\''/ext.kotlin_version = '\''1.9.22'\''/g' "$file" || true
             sed -i 's/ext\.kotlin_version[[:space:]]*=[[:space:]]*"[0-9]\.[0-9]\.[0-9]*"/ext.kotlin_version = "1.9.22"/g' "$file" || true
             sed -i 's/version "[0-9]\.[0-9]\.[0-9]*"/version "1.9.22"/g' "$file" || true
+            # 移除所有强制限定 languageVersion 或 apiVersion 为 1.6 的语句
+            sed -i '/languageVersion/d' "$file" || true
+            sed -i '/apiVersion/d' "$file" || true
           done
 
-          # 3. 彻底清除 android/app/build.gradle 中锁死语言版本的配置（防止强制要求 1.6）
-          if [ -f "android/app/build.gradle" ]; then
-            sed -i '/languageVersion/d' android/app/build.gradle || true
-            sed -i '/apiVersion/d' android/app/build.gradle || true
+          # 3. 在根 build.gradle 底部注入一段强制所有子模块统一使用 1.9 编译的钩子
+          if [ -f "android/build.gradle" ]; then
+            echo "" >> android/build.gradle
+            echo "allprojects { tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach { kotlinOptions { jvmTarget = '1.8' } } }" >> android/build.gradle
           fi
 
       - name: Clean and Pub Get
