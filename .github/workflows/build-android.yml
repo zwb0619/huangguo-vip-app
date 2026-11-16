@@ -55,13 +55,13 @@ jobs:
           include ":app"
           EOF
 
-          # 2. 深度排查并把所有 build.gradle 里的旧版 kotlin 版本号统统替换为 1.9.22
+          # 2. 深度排查并把所有 build.gradle 里的旧版 kotlin 版本号统统替换为 1.9.22 (注意这里用正确的 done 结尾)
           find android -name "build.gradle" | while read file; do
             echo "Upgrading Kotlin in $file"
             sed -i 's/kotlin-gradle-plugin:1\.[0-9]\.[0-9]*/kotlin-gradle-plugin:1.9.22/g' "$file" || true
             sed -i 's/ext\.kotlin_version = .*/ext.kotlin_version = '\''1.9.22'\''/g' "$file" || true
             sed -i 's/version "1\.[0-9]\.[0-9]*"/version "1.9.22"/g' "$file" || true
-          end
+          done
 
       - name: Clean and Pub Get
         run: |
