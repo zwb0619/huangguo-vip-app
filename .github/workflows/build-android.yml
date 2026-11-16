@@ -26,7 +26,7 @@ jobs:
 
       - name: Fix android/settings.gradle and Kotlin version
         run: |
-          # 1. 修复 settings.gradle
+          # 1. 重写 settings.gradle
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
@@ -55,11 +55,13 @@ jobs:
           include ":app"
           EOF
 
-          # 2. 如果项目里有 build.gradle，顺便把里面的 kotlin 版本也全局统一升级到 1.9.22
-          if [ -f "android/build.gradle" ]; then
-            sed -i 's/1.7.10/1.9.22/g' android/build.gradle || true
-            sed -i 's/1.8.22/1.9.22/g' android/build.gradle || true
-          fi
+          # 2. 深度排查并把所有 build.gradle 里的旧版 kotlin 版本号统统替换为 1.9.22
+          find android -name "build.gradle" | while read file; do
+            echo "Upgrading Kotlin in $file"
+            sed -i 's/kotlin-gradle-plugin:1\.[0-9]\.[0-9]*/kotlin-gradle-plugin:1.9.22/g' "$file" || true
+            sed -i 's/ext\.kotlin_version = .*/ext.kotlin_version = '\''1.9.22'\''/g' "$file" || true
+            sed -i 's/version "1\.[0-9]\.[0-9]*"/version "1.9.22"/g' "$file" || true
+          end
 
       - name: Clean and Pub Get
         run: |
