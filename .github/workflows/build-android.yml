@@ -26,7 +26,6 @@ jobs:
 
       - name: Fix android/settings.gradle
         run: |
-          # 动态将 settings.gradle 中写死的错误路径或配置替换为标准的标准写法
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
@@ -38,6 +37,12 @@ jobs:
               }()
 
               includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
           }
 
           plugins {
