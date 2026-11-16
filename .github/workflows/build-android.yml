@@ -24,6 +24,11 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Fix local path in settings.gradle
+        run: |
+          # 自动清理掉 settings.gradle 中硬编码的错误本地路径
+          sed -i '/octop-native/d' android/settings.gradle || true
+
       - name: Clean and Pub Get
         run: |
           flutter clean
