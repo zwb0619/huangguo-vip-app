@@ -24,10 +24,30 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Fix local path in settings.gradle
+      - name: Fix android/settings.gradle
         run: |
-          # 自动清理掉 settings.gradle 中硬编码的错误本地路径
-          sed -i '/octop-native/d' android/settings.gradle || true
+          # 动态将 settings.gradle 中写死的错误路径或配置替换为标准的标准写法
+          cat << 'EOF' > android/settings.gradle
+          pluginManagement {
+              def flutterSdkPath = {
+                  def properties = new Properties()
+                  file("local.properties").withInputStream { properties.load(it) }
+                  def flutterSdkPath = properties.getProperty("flutter.sdk")
+                  assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
+                  return flutterSdkPath
+              }()
+
+              includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+          }
+
+          plugins {
+              id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+              id "com.android.application" version "7.3.0" apply false
+              id "org.jetbrains.kotlin.android" version "1.7.10" apply false
+          }
+
+          include ":app"
+          EOF
 
       - name: Clean and Pub Get
         run: |
