@@ -24,9 +24,9 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Fix android/settings.gradle and Kotlin version
+      - name: Fix android/settings.gradle and Global Kotlin Version
         run: |
-          # 1. 重写 settings.gradle
+          # 1. 动态重写 settings.gradle 修复绝对路径问题
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
@@ -55,13 +55,20 @@ jobs:
           include ":app"
           EOF
 
-          # 2. 深度排查并把所有 build.gradle 里的旧版 kotlin 版本号统统替换为 1.9.22 (注意这里用正确的 done 结尾)
+          # 2. 递归全局搜索所有 build.gradle，将任何旧版 Kotlin 强行升级为 1.9.22
           find android -name "build.gradle" | while read file; do
             echo "Upgrading Kotlin in $file"
-            sed -i 's/kotlin-gradle-plugin:1\.[0-9]\.[0-9]*/kotlin-gradle-plugin:1.9.22/g' "$file" || true
-            sed -i 's/ext\.kotlin_version = .*/ext.kotlin_version = '\''1.9.22'\''/g' "$file" || true
-            sed -i 's/version "1\.[0-9]\.[0-9]*"/version "1.9.22"/g' "$file" || true
+            sed -i 's/kotlin-gradle-plugin:[0-9]\.[0-9]\.[0-9]*/kotlin-gradle-plugin:1.9.22/g' "$file" || true
+            sed -i 's/ext\.kotlin_version[[:space:]]*=[[:space:]]*'\''[0-9]\.[0-9]\.[0-9]*'\''/ext.kotlin_version = '\''1.9.22'\''/g' "$file" || true
+            sed -i 's/ext\.kotlin_version[[:space:]]*=[[:space:]]*"[0-9]\.[0-9]\.[0-9]*"/ext.kotlin_version = "1.9.22"/g' "$file" || true
+            sed -i 's/version "[0-9]\.[0-9]\.[0-9]*"/version "1.9.22"/g' "$file" || true
           done
+
+          # 3. 彻底清除 android/app/build.gradle 中锁死语言版本的配置（防止强制要求 1.6）
+          if [ -f "android/app/build.gradle" ]; then
+            sed -i '/languageVersion/d' android/app/build.gradle || true
+            sed -i '/apiVersion/d' android/app/build.gradle || true
+          fi
 
       - name: Clean and Pub Get
         run: |
