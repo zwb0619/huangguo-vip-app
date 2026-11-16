@@ -24,8 +24,10 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Flutter pub get
-        run: flutter pub get
+      - name: Clean and Pub Get
+        run: |
+          flutter clean
+          flutter pub get
 
       - name: Build Android APK (Release)
         run: flutter build apk --release
