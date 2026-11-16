@@ -24,7 +24,7 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Fix android/settings.gradle and Kotlin JVM Target
+      - name: Fix android/settings.gradle and Align JVM Target to 1.8
         run: |
           # 1. 动态重写 settings.gradle 修复绝对路径问题
           cat << 'EOF' > android/settings.gradle
@@ -55,7 +55,7 @@ jobs:
           include ":app"
           EOF
 
-          # 2. 全局升级 Kotlin 版本到 1.9.22
+          # 2. 全局升级 Kotlin 插件版本到 1.9.22
           find android -name "build.gradle" | while read file; do
             echo "Upgrading Kotlin in $file"
             sed -i 's/kotlin-gradle-plugin:[0-9]\.[0-9]\.[0-9]*/kotlin-gradle-plugin:1.9.22/g' "$file" || true
@@ -64,10 +64,10 @@ jobs:
             sed -i 's/version "[0-9]\.[0-9]\.[0-9]*"/version "1.9.22"/g' "$file" || true
           done
 
-          # 3. 核心修复：强制所有 Kotlin 编译任务的 JVM target 对齐到 11（解决与 Java 11 的冲突）
+          # 3. 核心修复：强制所有 Kotlin 编译任务的 JVM target 统一对齐到 '1.8'，彻底消除与 Java 1.8 的冲突
           if [ -f "android/build.gradle" ]; then
             echo "" >> android/build.gradle
-            echo "allprojects { tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach { kotlinOptions { jvmTarget = '11' } } }" >> android/build.gradle
+            echo "allprojects { tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach { kotlinOptions { jvmTarget = '1.8' } } }" >> android/build.gradle
           fi
 
       - name: Clean and Pub Get
